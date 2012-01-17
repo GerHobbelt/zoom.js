@@ -57,6 +57,9 @@ var zoom = function(zoomer){
 	// The current zoom level (scale)
 	var level = 1;
 	
+    var offsetx = 0, offsety = 0;
+    
+    
 	// The current mouse position, used for panning
 	var mouseX = 0,
 		mouseY = 0;
@@ -146,6 +149,8 @@ var zoom = function(zoomer){
 		}
 
 		level = scale;
+        offsetx = elementOffsetX;
+        offsety = -elementOffsetY;
 	}
 
 	/**
@@ -257,7 +262,11 @@ var zoom = function(zoomer){
 		
 		'zoomLevel': function() {
 			return level;
-		}
+		},
+        
+        'offset': function() {
+            return [offsetx, offsety];
+        }
 	}
 	
 };
