@@ -173,15 +173,22 @@ var zoom = (function(){
 					options.x = options.element.getBoundingClientRect().left - padding;
 					options.y = options.element.getBoundingClientRect().top - padding;
 				}
+				var windowWidth = window.innerWidth;
+				var windowHeight = window.innerHeight;
+				// IE compatability
+				if (!windowWidth) windowWidth = document.body.offsetWidth
+				if (!windowHeight) windowHeight = document.body.offsetHeight
 
 				// If width/height values are set, calculate scale from those values
 				if( options.width !== undefined && options.height !== undefined ) {
-					options.scale = Math.max( Math.min( window.innerWidth / options.width, window.innerHeight / options.height ), 1 );
+					options.scale = Math.max( Math.min( windowWidth / options.width, windowHeight / options.height ), 1 );
 				}
 
 				if( options.scale > 1 ) {
 					options.x *= options.scale;
 					options.y *= options.scale;
+					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2)
+					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2)
 
 					var scrollOffset = getScrollOffset();
 
