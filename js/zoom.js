@@ -28,16 +28,19 @@ var zoom = function(zoomer){
 								'msTransform' in zoomer.style ||
 								'OTransform' in zoomer.style ||
 								'transform' in zoomer.style;
-    
+
+    var timing = "0.8s"
+    var easing = "ease-in-out";
+	
 	if( supportsTransforms ) {
 		// The easing that will be applied when we zoom in/out
-		zoomer.style.transition = 'transform 0.8s ease';
-		zoomer.style.OTransition = '-o-transform 0.8s ease';
-		zoomer.style.msTransition = '-ms-transform 0.8s ease';
-		zoomer.style.MozTransition = '-moz-transform 0.8s ease';
-		zoomer.style.WebkitTransition = '-webkit-transform 0.8s ease';
+		document.body.style.transition = ['transform', timing, easing].join(' ');
+		document.body.style.OTransition = ['-o-transform', timing, easing].join(' ');
+		document.body.style.msTransition = ['-ms-transform', timing, easing].join(' ');
+		document.body.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
+		document.body.style.WebkitTransition = ['-webkit-transform', timing, easing].join(' ');
 	}
-	
+
 	// Zoom out if the user hits escape
 	document.addEventListener( 'keyup', function( event ) {
 		if( level !== 1 && event.keyCode === 27 ) {
@@ -54,21 +57,21 @@ var zoom = function(zoomer){
 	} );
 
 	/**
-	 * Applies the CSS required to zoom in, prioritizes use of CSS3 
+	 * Applies the CSS required to zoom in, prioritizes use of CSS3
 	 * transforms but falls back on zoom for IE.
-	 * 
-	 * @param {Number} pageOffsetX 
-	 * @param {Number} pageOffsetY 
-	 * @param {Number} elementOffsetX 
-	 * @param {Number} elementOffsetY 
-	 * @param {Number} scale 
+	 *
+	 * @param {Number} pageOffsetX
+	 * @param {Number} pageOffsetY
+	 * @param {Number} elementOffsetX
+	 * @param {Number} elementOffsetY
+	 * @param {Number} scale
 	 */
 	function magnify( pageOffsetX, pageOffsetY, elementOffsetX, elementOffsetY, scale ) {
 
 		if( supportsTransforms ) {
 			var origin = pageOffsetX +'px '+ pageOffsetY +'px',
-				transform = 'translate('+ -elementOffsetX +'px,'+ -elementOffsetY +'px) scale('+ scale +')';
-			
+				transform = 'translate('+ -elementOffsetX +'px,'+ -elementOffsetY +'px) scale(' + scale + ')';
+
 			zoomer.style.transformOrigin = origin;
 			zoomer.style.OTransformOrigin = origin;
 			zoomer.style.msTransformOrigin = origin;
@@ -146,7 +149,7 @@ var zoom = function(zoomer){
 	return {
 		/**
 		 * Zooms in on either a rectangle or HTML element.
-		 * 
+		 *
 		 * @param {Object} options
 		 *   - element: HTML element to zoom in on
 		 *   OR
@@ -174,15 +177,22 @@ var zoom = function(zoomer){
 					options.x = options.element.getBoundingClientRect().left - padding;
 					options.y = options.element.getBoundingClientRect().top - padding;
 				}
+				var windowWidth = window.innerWidth;
+				var windowHeight = window.innerHeight;
+				// IE compatability
+				if (!windowWidth) windowWidth = document.body.offsetWidth;
+				if (!windowHeight) windowHeight = document.body.offsetHeight;
 
 				// If width/height values are set, calculate scale from those values
 				if( options.width !== undefined && options.height !== undefined ) {
-					options.scale = Math.max( Math.min( window.innerWidth / options.width, window.innerHeight / options.height ), 1 );
+					options.scale = Math.max( Math.min( windowWidth / options.width, windowHeight / options.height ), 1 );
 				}
 
 				if( options.scale > 1 ) {
 					options.x *= options.scale;
 					options.y *= options.scale;
+					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2)
+					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2)
 
 					var scrollOffset = getScrollOffset();
 
@@ -208,7 +218,7 @@ var zoom = function(zoomer){
 			clearInterval( panUpdateInterval );
 
 			var scrollOffset = getScrollOffset();
-			
+
 			magnify( scrollOffset.x, scrollOffset.y, 0, 0, 1 );
 
 			level = 1;
@@ -221,7 +231,7 @@ var zoom = function(zoomer){
 		reset: function() { 
 			this.out(); 
 		},
-		
+
 		zoomLevel: function() {
 			return level;
 		},
@@ -230,6 +240,5 @@ var zoom = function(zoomer){
             return [offsetx, offsety];
         }
 	}
-	
 };
 
