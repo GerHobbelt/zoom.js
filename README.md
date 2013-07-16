@@ -2,6 +2,8 @@
 
 Enables a minimal JS API for zooming in on specific points or DOM elements.
 
+Hacked so that any element can be use as the zoom frame of reference.
+
 *Note that this is only a proof of concept so don't use it for anything important. Does not work in IE, yet.*
 
 [Try out the demo](http://lab.hakim.se/zoom-js/).
@@ -11,7 +13,9 @@ Enables a minimal JS API for zooming in on specific points or DOM elements.
 #### Zoom in on an element:
 
 ```
-  zoom.to({ 
+  zoomer = zoom(document.body);
+
+  zoomer.to({ 
     element: document.querySelector( 'img' ) 
   });
 ```
@@ -19,7 +23,7 @@ Enables a minimal JS API for zooming in on specific points or DOM elements.
 #### Zoom in on a point:
 
 ```
-  zoom.to({
+  zoomer.to({
     x: 100,
     y: 200,
     width: 300,
@@ -28,7 +32,7 @@ Enables a minimal JS API for zooming in on specific points or DOM elements.
 ```
 
 ```
-  zoom.to({
+  zoomer.to({
     x: 100,
     y: 200,
     scale: 3
@@ -37,7 +41,7 @@ Enables a minimal JS API for zooming in on specific points or DOM elements.
 
 #### Reset
 ```
-  zoom.out();
+  zoomer.out();
 ```
 
 # License
@@ -45,3 +49,4 @@ Enables a minimal JS API for zooming in on specific points or DOM elements.
 MIT licensed
 
 Copyright (C) 2011-2012 Hakim El Hattab, http://hakim.se
+2012 Ingenuitas Inc http://ingenuitas.com

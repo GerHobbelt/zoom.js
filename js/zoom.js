@@ -5,11 +5,13 @@
  *
  * Copyright (C) 2011-2012 Hakim El Hattab, http://hakim.se
  */
-var zoom = (function(){
+var zoom = function(zoomer){
 
 	// The current zoom level (scale)
 	var level = 1;
 
+    var offsetx = 0, offsety = 0;
+    
 	// The current mouse position, used for panning
 	var mouseX = 0,
 		mouseY = 0;
@@ -20,20 +22,25 @@ var zoom = (function(){
 
     var currentOptions = null;
 
+	zoomer = zoomer || document.body;
+	
 	// Check for transform support so that we can fallback otherwise
-	var supportsTransforms = 	'WebkitTransform' in document.body.style ||
-								'MozTransform' in document.body.style ||
-								'msTransform' in document.body.style ||
-								'OTransform' in document.body.style ||
-								'transform' in document.body.style;
+	var supportsTransforms = 	'WebkitTransform' in zoomer.style ||
+								'MozTransform' in zoomer.style ||
+								'msTransform' in zoomer.style ||
+								'OTransform' in zoomer.style ||
+								'transform' in zoomer.style;
 
+    var timing = "0.8s"
+    var easing = "ease-in-out";
+	
 	if( supportsTransforms ) {
 		// The easing that will be applied when we zoom in/out
-		document.body.style.transition = 'transform 0.8s ease';
-		document.body.style.OTransition = '-o-transform 0.8s ease';
-		document.body.style.msTransition = '-ms-transform 0.8s ease';
-		document.body.style.MozTransition = '-moz-transform 0.8s ease';
-		document.body.style.WebkitTransition = '-webkit-transform 0.8s ease';
+		document.body.style.transition = ['transform', timing, easing].join(' ');
+		document.body.style.OTransition = ['-o-transform', timing, easing].join(' ');
+		document.body.style.msTransition = ['-ms-transform', timing, easing].join(' ');
+		document.body.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
+		document.body.style.WebkitTransition = ['-webkit-transform', timing, easing].join(' ');
 	}
 
 	// Zoom out if the user hits escape
@@ -65,42 +72,44 @@ var zoom = (function(){
 
 		if( supportsTransforms ) {
 			var origin = pageOffsetX +'px '+ pageOffsetY +'px',
-				transform = 'translate('+ -elementOffsetX +'px,'+ -elementOffsetY +'px) scale('+ scale +')';
+				transform = 'translate('+ -elementOffsetX +'px,'+ -elementOffsetY +'px) scale(' + scale + ')';
 
-			document.body.style.transformOrigin = origin;
-			document.body.style.OTransformOrigin = origin;
-			document.body.style.msTransformOrigin = origin;
-			document.body.style.MozTransformOrigin = origin;
-			document.body.style.WebkitTransformOrigin = origin;
+			zoomer.style.transformOrigin = origin;
+			zoomer.style.OTransformOrigin = origin;
+			zoomer.style.msTransformOrigin = origin;
+			zoomer.style.MozTransformOrigin = origin;
+			zoomer.style.WebkitTransformOrigin = origin;
 
-			document.body.style.transform = transform;
-			document.body.style.OTransform = transform;
-			document.body.style.msTransform = transform;
-			document.body.style.MozTransform = transform;
-			document.body.style.WebkitTransform = transform;
+			zoomer.style.transform = transform;
+			zoomer.style.OTransform = transform;
+			zoomer.style.msTransform = transform;
+			zoomer.style.MozTransform = transform;
+			zoomer.style.WebkitTransform = transform;
 		}
 		else {
 			// Reset all values
 			if( scale === 1 ) {
-				document.body.style.position = '';
-				document.body.style.left = '';
-				document.body.style.top = '';
-				document.body.style.width = '';
-				document.body.style.height = '';
-				document.body.style.zoom = '';
+				zoomer.style.position = '';
+				zoomer.style.left = '';
+				zoomer.style.top = '';
+				zoomer.style.width = '';
+				zoomer.style.height = '';
+				zoomer.style.zoom = '';
 			}
 			// Apply scale
 			else {
-				document.body.style.position = 'relative';
-				document.body.style.left = ( - ( pageOffsetX + elementOffsetX ) / scale ) + 'px';
-				document.body.style.top = ( - ( pageOffsetY + elementOffsetY ) / scale ) + 'px';
-				document.body.style.width = ( scale * 100 ) + '%';
-				document.body.style.height = ( scale * 100 ) + '%';
-				document.body.style.zoom = scale;
+				zoomer.style.position = 'relative';
+				zoomer.style.left = ( - ( pageOffsetX + elementOffsetX ) / scale ) + 'px';
+				zoomer.style.top = ( - ( pageOffsetY + elementOffsetY ) / scale ) + 'px';
+				zoomer.style.width = ( scale * 100 ) + '%';
+				zoomer.style.height = ( scale * 100 ) + '%';
+				zoomer.style.zoom = scale;
 			}
 		}
 
 		level = scale;
+        offsetx = elementOffsetX;
+        offsety = elementOffsetY;
 
         if( level !== 1 && document.documentElement.classList ) {
             document.documentElement.classList.add( 'zoomed' );
@@ -177,15 +186,22 @@ var zoom = (function(){
 					options.x = options.element.getBoundingClientRect().left - padding;
 					options.y = options.element.getBoundingClientRect().top - padding;
 				}
+				var windowWidth = window.innerWidth;
+				var windowHeight = window.innerHeight;
+				// IE compatability
+				if (!windowWidth) windowWidth = document.body.offsetWidth;
+				if (!windowHeight) windowHeight = document.body.offsetHeight;
 
 				// If width/height values are set, calculate scale from those values
 				if( options.width !== undefined && options.height !== undefined ) {
-					options.scale = Math.max( Math.min( window.innerWidth / options.width, window.innerHeight / options.height ), 1 );
+					options.scale = Math.max( Math.min( windowWidth / options.width, windowHeight / options.height ), 1 );
 				}
 
 				if( options.scale > 1 ) {
 					options.x *= options.scale;
 					options.y *= options.scale;
+					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2)
+					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2)
 
 					var scrollOffset = getScrollOffset();
 
@@ -196,7 +212,6 @@ var zoom = (function(){
 					magnify( scrollOffset.x, scrollOffset.y, options.x, options.y, options.scale );
 
 					if( options.pan !== false ) {
-
 						// Wait with engaging panning as it may conflict with the
 						// zoom transition
 						panEngageTimeout = setTimeout( function() {
@@ -229,13 +244,20 @@ var zoom = (function(){
 		},
 
 		// Alias
-		magnify: function( options ) { this.to( options ) },
-		reset: function() { this.out() },
+		magnify: function( options ) { 
+			this.to( options ); 
+		},
+		reset: function() { 
+			this.out(); 
+		},
 
 		zoomLevel: function() {
 			return level;
-		}
+		},
+        
+        offset: function() {
+            return [offsetx, offsety];
+        }
 	}
-
-})();
+};
 
