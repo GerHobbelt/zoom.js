@@ -11,7 +11,7 @@ var zoom = function(zoomer){
 	var level = 1;
 
     var offsetx = 0, offsety = 0;
-    
+
 	// The current mouse position, used for panning
 	var mouseX = 0,
 		mouseY = 0;
@@ -23,7 +23,7 @@ var zoom = function(zoomer){
     var currentOptions = null;
 
 	zoomer = zoomer || document.body;
-	
+
 	// Check for transform support so that we can fallback otherwise
 	var supportsTransforms = 	'WebkitTransform' in zoomer.style ||
 								'MozTransform' in zoomer.style ||
@@ -33,7 +33,7 @@ var zoom = function(zoomer){
 
     var timing = "0.8s"
     var easing = "ease-in-out";
-	
+
 	if( supportsTransforms ) {
 		// The easing that will be applied when we zoom in/out
 		document.body.style.transition = ['transform', timing, easing].join(' ');
@@ -151,8 +151,8 @@ var zoom = function(zoomer){
 	function getScrollOffset() {
 		return {
 			x: window.scrollX !== undefined ? window.scrollX : window.pageXOffset,
-			y: window.scrollY !== undefined ? window.scrollY : window.pageXYffset
-		}
+			y: window.scrollY !== undefined ? window.scrollY : window.pageYOffset
+		};
 	}
 
 	return {
@@ -200,8 +200,8 @@ var zoom = function(zoomer){
 				if( options.scale > 1 ) {
 					options.x *= options.scale;
 					options.y *= options.scale;
-					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2)
-					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2)
+					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2);
+					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2);
 
 					var scrollOffset = getScrollOffset();
 
@@ -217,7 +217,6 @@ var zoom = function(zoomer){
 						panEngageTimeout = setTimeout( function() {
 							panUpdateInterval = setInterval( pan, 1000 / 60 );
 						}, 800 );
-
 					}
 				}
 
@@ -244,20 +243,20 @@ var zoom = function(zoomer){
 		},
 
 		// Alias
-		magnify: function( options ) { 
-			this.to( options ); 
+		magnify: function( options ) {
+			this.to( options );
 		},
-		reset: function() { 
-			this.out(); 
+		reset: function() {
+			this.out();
 		},
 
 		zoomLevel: function() {
 			return level;
 		},
-        
+
         offset: function() {
             return [offsetx, offsety];
         }
-	}
+	};
 };
 
