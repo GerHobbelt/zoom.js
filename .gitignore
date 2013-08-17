@@ -1,3 +1,8 @@
+# Editor backup files
+*~
+*.bak
+
+# misc dreck
 .DS_Store
 .svn
 log/*.log
