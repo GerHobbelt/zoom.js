@@ -3,60 +3,112 @@
  * http://lab.hakim.se/zoom-js
  * MIT licensed
  *
- * Copyright (C) 2011-2012 Hakim El Hattab, http://hakim.se
+ * Copyright (C) 2011-2013 Hakim El Hattab, http://hakim.se
  */
-var zoom = function(zoomer){
 
-	// The current zoom level (scale)
-	var level = 1;
+(function ( window, factory ) {
 
-    var offsetx = 0, offsety = 0;
+  if ( typeof module === "object" && typeof module.exports === "object" ) {
+    // Expose a factory as module.exports in loaders that implement the Node
+    // module pattern (including browserify).
+    // This accentuates the need for a real window in the environment
+    // e.g. var jQuery = require("jquery")(window);
+    module.exports = function( w ) {
+      w = w || window;
+      if ( !w.document ) {
+        throw new Error("ZOOM requires a window with a document");
+      }
+      return factory( w, w.document );
+    };
+  } else {
+    if ( typeof define === "function" && define.amd ) {
+      // AMD. Register as a named module.
+      define( "zoom", [], function() {
+        return factory(window, document);
+      });
+    } else {
+        // Browser globals
+        window.zoom = factory(window, document);
+    }
+  }
 
-	// The current mouse position, used for panning
-	var mouseX = 0,
+// Pass this, window may not be defined yet
+}(this, function ( window, document, undefined ) {
+
+  var zoom = function(zoomer) {
+
+	var level;
+    var offsetx, offsety;
+	var mouseX, mouseY;
+	var panEngageTimeout, panUpdateInterval;
+    var currentOptions;
+	var supportsTransforms;
+    var timing = "0.8s"
+    var easing = "ease-in-out";
+
+	// Zoom out if the user hits escape
+	var zoomOutOnESC = function( event ) {
+		if( level !== 1 && event.keyCode === 27 ) {
+			zoom.out();
+		}
+    };
+
+	// Monitor mouse movement for panning
+	var monitorMouse = function( event ) {
+		if( level !== 1 ) {
+			mouseX = event.clientX;
+			mouseY = event.clientY;
+		}
+    };
+
+	function init(zoomer) {
+		// The current zoom level (scale)
+		level = 1;
+
+    	offsetx = 0;
+		offsety = 0;
+
+		// The current mouse position, used for panning
+		mouseX = 0;
 		mouseY = 0;
 
-	// Timeout before pan is activated
-	var panEngageTimeout = -1,
+		// Timeout before pan is activated
+		panEngageTimeout = -1;
 		panUpdateInterval = -1;
 
-    var currentOptions = null;
+    	currentOptions = null;
 
-	zoomer = zoomer || document.body;
+		zoomer = zoomer || document.body;
 
-	// Check for transform support so that we can fallback otherwise
-	var supportsTransforms = 	'WebkitTransform' in zoomer.style ||
+		// Check for transform support so that we can fallback otherwise
+		supportsTransforms = 	'WebkitTransform' in zoomer.style ||
 								'MozTransform' in zoomer.style ||
 								'msTransform' in zoomer.style ||
 								'OTransform' in zoomer.style ||
 								'transform' in zoomer.style;
 
-    var timing = "0.8s"
-    var easing = "ease-in-out";
+    	//timing = "0.8s"
+    	//easing = "ease-in-out";
 
-	if( supportsTransforms ) {
-		// The easing that will be applied when we zoom in/out
-		document.body.style.transition = ['transform', timing, easing].join(' ');
-		document.body.style.OTransition = ['-o-transform', timing, easing].join(' ');
-		document.body.style.msTransition = ['-ms-transform', timing, easing].join(' ');
-		document.body.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
-		document.body.style.WebkitTransition = ['-webkit-transform', timing, easing].join(' ');
+		if( supportsTransforms ) {
+			// The easing that will be applied when we zoom in/out
+			zoomer.style.transition = ['transform', timing, easing].join(' ');
+			zoomer.style.OTransition = ['-o-transform', timing, easing].join(' ');
+			zoomer.style.msTransition = ['-ms-transform', timing, easing].join(' ');
+			zoomer.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
+			zoomer.style.WebkitTransition = ['-webkit-transform', timing, easing].join(' ');
+		}
+
+		// Zoom out if the user hits escape
+		document.removeEventListener( 'keyup', zoomOutOnESC, false );
+		document.addEventListener( 'keyup', zoomOutOnESC, false );
+
+		// Monitor mouse movement for panning
+		document.removeEventListener( 'mousemove', monitorMouse, false );
+		document.addEventListener( 'mousemove', monitorMouse, false );
+
+		return zoom;
 	}
-
-	// Zoom out if the user hits escape
-	document.addEventListener( 'keyup', function( event ) {
-		if( level !== 1 && event.keyCode === 27 ) {
-			zoom.out();
-		}
-    }, false );
-
-	// Monitor mouse movement for panning
-	document.addEventListener( 'mousemove', function( event ) {
-		if( level !== 1 ) {
-			mouseX = event.clientX;
-			mouseY = event.clientY;
-		}
-    }, false );
 
 	/**
 	 * Applies the CSS required to zoom in, prioritizes use of CSS3
@@ -256,7 +308,15 @@ var zoom = function(zoomer){
 
         offset: function() {
             return [offsetx, offsety];
-        }
+        },
+
+		// allow re-initialization ZOOM:
+		init: init
 	};
+  };
+
+  zoom = zoom();
+
+  return zoom.init();
 };
 
