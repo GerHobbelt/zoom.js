@@ -16,7 +16,7 @@ Hacked so that any element can be use as the zoom frame of reference.
   zoomer = zoom(document.body);
 
   zoomer.to({ 
-    element: document.querySelector( 'img' ) 
+    element: document.querySelector( 'img' )
   });
 ```
 
@@ -48,5 +48,4 @@ Hacked so that any element can be use as the zoom frame of reference.
 
 MIT licensed
 
-Copyright (C) 2011-2012 Hakim El Hattab, http://hakim.se
-2012 Ingenuitas Inc http://ingenuitas.com
+Copyright (C) 2011-2014 Hakim El Hattab, http://hakim.se

@@ -1,9 +1,9 @@
 /*!
- * zoom.js 0.2 (modified version for use with reveal.js)
+ * zoom.js 0.3 (modified version for use with reveal.js)
  * http://lab.hakim.se/zoom-js
  * MIT licensed
  *
- * Copyright (C) 2011-2013 Hakim El Hattab, http://hakim.se
+ * Copyright (C) 2011-2014 Hakim El Hattab, http://hakim.se
  */
 
 (function ( window, factory ) {
@@ -111,20 +111,37 @@
 	}
 
 	/**
-	 * Applies the CSS required to zoom in, prioritizes use of CSS3
+	 * Applies the CSS required to zoom in, prefers the use of CSS3
 	 * transforms but falls back on zoom for IE.
 	 *
-	 * @param {Number} pageOffsetX
-	 * @param {Number} pageOffsetY
-	 * @param {Number} elementOffsetX
-	 * @param {Number} elementOffsetY
+	 * @param {Object} rect
 	 * @param {Number} scale
 	 */
-	function magnify( pageOffsetX, pageOffsetY, elementOffsetX, elementOffsetY, scale ) {
+	function magnify( rect, scale ) {
+
+		var scrollOffset = getScrollOffset();
+
+		// Ensure a width/height is set
+		rect.width = rect.width || 1;
+		rect.height = rect.height || 1;
+
+		// Center the rect within the zoomed viewport
+		rect.x -= ( window.innerWidth - ( rect.width * scale ) ) / 2;
+		rect.y -= ( window.innerHeight - ( rect.height * scale ) ) / 2;
 
 		if( supportsTransforms ) {
-			var origin = pageOffsetX +'px '+ pageOffsetY +'px',
-				transform = 'translate('+ -elementOffsetX +'px,'+ -elementOffsetY +'px) scale(' + scale + ')';
+			// Reset
+			if( scale === 1 ) {
+				zoomer.style.transform = '';
+				zoomer.style.OTransform = '';
+				zoomer.style.msTransform = '';
+				zoomer.style.MozTransform = '';
+				zoomer.style.WebkitTransform = '';
+			}
+			// Scale
+			else {
+				var origin = scrollOffset.x +'px '+ scrollOffset.y +'px',
+					transform = 'translate('+ -rect.x +'px,'+ -rect.y +'px) scale('+ scale +')';
 
 			zoomer.style.transformOrigin = origin;
 			zoomer.style.OTransformOrigin = origin;
@@ -137,9 +154,10 @@
 			zoomer.style.msTransform = transform;
 			zoomer.style.MozTransform = transform;
 			zoomer.style.WebkitTransform = transform;
+			}
 		}
 		else {
-			// Reset all values
+			// Reset
 			if( scale === 1 ) {
 				zoomer.style.position = '';
 				zoomer.style.left = '';
@@ -148,11 +166,11 @@
 				zoomer.style.height = '';
 				zoomer.style.zoom = '';
 			}
-			// Apply scale
+			// Scale
 			else {
 				zoomer.style.position = 'relative';
-				zoomer.style.left = ( - ( pageOffsetX + elementOffsetX ) / scale ) + 'px';
-				zoomer.style.top = ( - ( pageOffsetY + elementOffsetY ) / scale ) + 'px';
+				zoomer.style.left = ( - ( scrollOffset.x + rect.x ) / scale ) + 'px';
+				zoomer.style.top = ( - ( scrollOffset.y + rect.y ) / scale ) + 'px';
 				zoomer.style.width = ( scale * 100 ) + '%';
 				zoomer.style.height = ( scale * 100 ) + '%';
 				zoomer.style.zoom = scale;
@@ -160,8 +178,8 @@
 		}
 
 		level = scale;
-        offsetx = elementOffsetX;
-        offsety = elementOffsetY;
+        offsetx = rect.x;
+        offsety = rect.y;
 
         if( level !== 1 && document.documentElement.classList ) {
             document.documentElement.classList.add( 'zoomed' );
@@ -169,6 +187,15 @@
         else {
             document.documentElement.classList.remove( 'zoomed' );
         }
+
+/*
+TBD: old code had this extra edit after each magnify call
+
+        if( currentOptions && currentOptions.element ) {
+            scrollOffset.x -= ( window.innerWidth - ( currentOptions.width * currentOptions.scale ) ) / 2;
+        }
+*/
+
     }
 
 	/**
@@ -219,6 +246,7 @@
 		 *   - scale: can be used instead of width/height to explicitly set scale
 		 */
 		to: function( options ) {
+
 			// Due to an implementation limitation we can't zoom in
 			// to another element without zooming out first
 			if( level !== 1 ) {
@@ -232,11 +260,12 @@
 				if( !!options.element ) {
 					// Space around the zoomed in element to leave on screen
 					var padding = 20;
+					var bounds = options.element.getBoundingClientRect();
 
-					options.width = options.element.getBoundingClientRect().width + ( padding * 2 );
-					options.height = options.element.getBoundingClientRect().height + ( padding * 2 );
-					options.x = options.element.getBoundingClientRect().left - padding;
-					options.y = options.element.getBoundingClientRect().top - padding;
+					options.x = bounds.left - padding;
+					options.y = bounds.top - padding;
+					options.width = bounds.width + ( padding * 2 );
+					options.height = bounds.height + ( padding * 2 );
 				}
 				var windowWidth = window.innerWidth;
 				var windowHeight = window.innerHeight;
@@ -255,13 +284,7 @@
 					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2);
 					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2);
 
-					var scrollOffset = getScrollOffset();
-
-                    if( options.element ) {
-                        scrollOffset.x -= ( window.innerWidth - ( options.width * options.scale ) ) / 2;
-                    }
-
-					magnify( scrollOffset.x, scrollOffset.y, options.x, options.y, options.scale );
+					magnify( options, options.scale );
 
 					if( options.pan !== false ) {
 						// Wait with engaging panning as it may conflict with the
@@ -283,13 +306,7 @@
 			clearTimeout( panEngageTimeout );
 			clearInterval( panUpdateInterval );
 
-			var scrollOffset = getScrollOffset();
-
-            if( currentOptions && currentOptions.element ) {
-                scrollOffset.x -= ( window.innerWidth - ( currentOptions.width * currentOptions.scale ) ) / 2;
-            }
-
-			magnify( scrollOffset.x, scrollOffset.y, 0, 0, 1 );
+			magnify( { x: 0, y: 0 }, 1 );
 
 			level = 1;
 		},
