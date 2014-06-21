@@ -45,6 +45,12 @@
 	var supportsTransforms;
     var timing = "0.8s"
     var easing = "ease-in-out";
+    var	defaultOptions = {
+		zoneX: 0.12,			// ratio: the sensitive area near the viewport edge where mouse movement will result in a page pan in zoomed state
+		zoneY: 0.12 * 16/9,		// ratio: as above but for vertical panning; by default we use an 'approximately same size' zone as for the width/X
+		accelerationFactor: 14 
+	}; 			
+
 
 	// Zoom out if the user hits escape
 	var zoomOutOnESC = function( event ) {
@@ -76,7 +82,7 @@
 		panEngageTimeout = -1;
 		panUpdateInterval = -1;
 
-    	currentOptions = null;
+    	currentOptions = extend({}, defaultOptions);
 
 		zoomer = zoomerElement || zoomer || document.body;
 
@@ -92,11 +98,11 @@
 
 		if( supportsTransforms ) {
 			// The easing that will be applied when we zoom in/out
-			zoomer.style.transition = ['transform', timing, easing].join(' ');
-			zoomer.style.OTransition = ['-o-transform', timing, easing].join(' ');
-			zoomer.style.msTransition = ['-ms-transform', timing, easing].join(' ');
-			zoomer.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
 			zoomer.style.WebkitTransition = ['-webkit-transform', timing, easing].join(' ');
+			zoomer.style.MozTransition = ['-moz-transform', timing, easing].join(' ');
+			zoomer.style.msTransition = ['-ms-transform', timing, easing].join(' ');
+			zoomer.style.OTransition = ['-o-transform', timing, easing].join(' ');
+			zoomer.style.transition = ['transform', timing, easing].join(' ');
 		}
 
 		// Zoom out if the user hits escape
@@ -120,40 +126,27 @@
 	function magnify( rect, scale ) {
 
 		var scrollOffset = getScrollOffset();
+		var viewport = getViewportSize();
 
 		// Ensure a width/height is set
 		rect.width = rect.width || 1;
 		rect.height = rect.height || 1;
 
 		// Center the rect within the zoomed viewport
-		rect.x -= ( window.innerWidth - ( rect.width * scale ) ) / 2;
-		rect.y -= ( window.innerHeight - ( rect.height * scale ) ) / 2;
+		rect.x -= ( viewport.width - ( rect.width * scale ) ) / 2;
+		rect.y -= ( viewport.height - ( rect.height * scale ) ) / 2;
 
 		if( supportsTransforms ) {
 			// Reset
 			if( scale === 1 ) {
-				zoomer.style.transform = '';
-				zoomer.style.OTransform = '';
-				zoomer.style.msTransform = '';
-				zoomer.style.MozTransform = '';
-				zoomer.style.WebkitTransform = '';
+				transformElement( zoomer, '' );
 			}
 			// Scale
 			else {
-				var origin = scrollOffset.x +'px '+ scrollOffset.y +'px',
-					transform = 'translate('+ -rect.x +'px,'+ -rect.y +'px) scale('+ scale +')';
+				var origin = scrollOffset.x + 'px ' + scrollOffset.y + 'px',
+					transform = 'translate3d( ' + -rect.x + 'px,' + -rect.y + 'px, 0px ) rotateX( 0deg ) rotateY( 0deg ) scale(' + scale + ')';
 
-			zoomer.style.transformOrigin = origin;
-			zoomer.style.OTransformOrigin = origin;
-			zoomer.style.msTransformOrigin = origin;
-			zoomer.style.MozTransformOrigin = origin;
-			zoomer.style.WebkitTransformOrigin = origin;
-
-			zoomer.style.transform = transform;
-			zoomer.style.OTransform = transform;
-			zoomer.style.msTransform = transform;
-			zoomer.style.MozTransform = transform;
-			zoomer.style.WebkitTransform = transform;
+				transformElement( zoomer, transform, origin );
 			}
 		}
 		else {
@@ -188,42 +181,47 @@
             document.documentElement.classList.remove( 'zoomed' );
         }
 
-/*
-TBD: old code had this extra edit after each magnify call
+		return scale;
+		
+    }
 
-        if( currentOptions && currentOptions.element ) {
-            scrollOffset.x -= ( window.innerWidth - ( currentOptions.width * currentOptions.scale ) ) / 2;
-        }
-*/
-
+    /**
+     * Calculate the number of pixels to pan using an acceleration curve so that very small deltas will produce single pixel movement.
+     *
+     * @param {Ratio} mouseDeltaRatio a number in the range 0..1, where 0 would be maximum(!) 'force' ~ acceleration. 
+     */
+    function calculateMovementDelta(mouseDeltaRatio, zoomLevel, fullSpan) {
+    	return (1 - mouseDeltaRatio) * 14 / zoomLevel;
     }
 
 	/**
-	 * Pan the document when the mosue cursor approaches the edges
+	 * Pan the document when the mouse cursor approaches the edges
 	 * of the window.
 	 */
 	function pan() {
+		var viewport = getViewportSize();
+
 		var range = 0.12,
-			rangeX = window.innerWidth * range,
-			rangeY = window.innerHeight * range,
+			rangeX = viewport.width * range,
+			rangeY = viewport.height * range,
 			scrollOffset = getScrollOffset();
 
 		// Up
 		if( mouseY < rangeY ) {
-			window.scroll( scrollOffset.x, scrollOffset.y - ( 1 - ( mouseY / rangeY ) ) * ( 14 / level ) );
+			window.scroll( scrollOffset.x, scrollOffset.y - calculateMovementDelta( mouseY / rangeY, level, viewport.height ) );
 		}
 		// Down
-		else if( mouseY > window.innerHeight - rangeY ) {
-			window.scroll( scrollOffset.x, scrollOffset.y + ( 1 - ( window.innerHeight - mouseY ) / rangeY ) * ( 14 / level ) );
+		else if( mouseY > viewport.height - rangeY ) {
+			window.scroll( scrollOffset.x, scrollOffset.y + calculateMovementDelta( ( viewport.height - mouseY ) / rangeY, level, viewport.height ) );
 		}
 
 		// Left
 		if( mouseX < rangeX ) {
-			window.scroll( scrollOffset.x - ( 1 - ( mouseX / rangeX ) ) * ( 14 / level ), scrollOffset.y );
+			window.scroll( scrollOffset.x - calculateMovementDelta( mouseX / rangeX, level, viewport.width ), scrollOffset.y );
 		}
 		// Right
-		else if( mouseX > window.innerWidth - rangeX ) {
-			window.scroll( scrollOffset.x + ( 1 - ( window.innerWidth - mouseX ) / rangeX ) * ( 14 / level ), scrollOffset.y );
+		else if( mouseX > viewport.width - rangeX ) {
+			window.scroll( scrollOffset.x + calculateMovementDelta( ( viewport.width - mouseX ) / rangeX, level, viewport.width ), scrollOffset.y );
 		}
 	}
 
@@ -233,6 +231,66 @@ TBD: old code had this extra edit after each magnify call
 			y: window.scrollY !== undefined ? window.scrollY : window.pageYOffset
 		};
 	}
+
+	function getViewportSize() {
+		var windowWidth = window.innerWidth;
+		var windowHeight = window.innerHeight;
+		// IE compatibility
+		if (!windowWidth) windowWidth = document.body.offsetWidth;
+		if (!windowHeight) windowHeight = document.body.offsetHeight;
+
+		return {
+			width: windowWidth,
+			height: windowHeight
+		};
+	}
+
+    /**
+     * Applies a CSS transform to the target element.
+     */
+    function transformElement( element, transform, origin ) {
+
+        element.style.WebkitTransform = transform;
+        element.style.MozTransform = transform;
+        element.style.msTransform = transform;
+        element.style.OTransform = transform;
+        element.style.transform = transform;
+
+        if (typeof origin !== 'undefined') {
+            element.style.WebkitTransformOrigin = origin;
+            element.style.MozTransformOrigin = origin;
+            element.style.msTransformOrigin = origin;
+            element.style.OTransformOrigin = origin;
+            element.style.transformOrigin = origin;
+        }
+        else {
+	        // else: do not reset the transformOrigin as it is still needed for the reset CSS3 animation.
+        
+            // element.style.WebkitTransformOrigin = null;
+            // element.style.MozTransformOrigin = null;
+            // element.style.msTransformOrigin = null;
+            // element.style.OTransformOrigin = null;
+            // element.style.transformOrigin = null;
+        }
+
+    }
+
+    /**
+     * Extend object `a` with the properties of object `b`.
+     * If there's a conflict, object `b` takes precedence.
+     *
+     * Return the augmented `a` object as the result. 
+     */
+    function extend( a, b ) {
+
+        if( b ) {
+            for( var i in b ) {
+                a[ i ] = b[ i ];
+            }
+        }
+        return a;
+
+    }
 
 	return {
 		/**
@@ -247,12 +305,13 @@ TBD: old code had this extra edit after each magnify call
 		 */
 		to: function( options ) {
 
-			// Due to an implementation limitation we can't zoom in
-			// to another element without zooming out first
-			if( level !== 1 ) {
+			if( level !== 1 || !options ) {
 				zoom.out();
 			}
 			else {
+				delete currentOptions.element;
+				options = extend(currentOptions, options);
+
 				options.x = options.x || 0;
 				options.y = options.y || 0;
 
@@ -267,26 +326,26 @@ TBD: old code had this extra edit after each magnify call
 					options.width = bounds.width + ( padding * 2 );
 					options.height = bounds.height + ( padding * 2 );
 				}
-				var windowWidth = window.innerWidth;
-				var windowHeight = window.innerHeight;
-				// IE compatability
-				if (!windowWidth) windowWidth = document.body.offsetWidth;
-				if (!windowHeight) windowHeight = document.body.offsetHeight;
+
+				var viewport = getViewportSize();				
 
 				// If width/height values are set, calculate scale from those values
 				if( options.width !== undefined && options.height !== undefined ) {
-					options.scale = Math.max( Math.min( windowWidth / options.width, windowHeight / options.height ), 1 );
+					options.scale = Math.max( Math.min( viewport.width / options.width, viewport.height / options.height ), 1 );
 				}
 
 				if( options.scale > 1 ) {
 					options.x *= options.scale;
 					options.y *= options.scale;
-					options.x -= Math.max(0, (windowWidth - options.width * options.scale) / 2);
-					options.y -= Math.max(0, (windowHeight - options.height * options.scale) / 2);
+					//options.x -= Math.max(0, (viewport.width - options.width * options.scale) / 2);
+					//options.y -= Math.max(0, (viewport.height - options.height * options.scale) / 2);
 
-					magnify( options, options.scale );
+					options.scale = magnify( options, options.scale );
 
 					if( options.pan !== false ) {
+						clearTimeout( panEngageTimeout );
+						clearInterval( panUpdateInterval );
+
 						// Wait with engaging panning as it may conflict with the
 						// zoom transition
 						panEngageTimeout = setTimeout( function() {
@@ -306,16 +365,19 @@ TBD: old code had this extra edit after each magnify call
 			clearTimeout( panEngageTimeout );
 			clearInterval( panUpdateInterval );
 
-			magnify( { x: 0, y: 0 }, 1 );
-
-			level = 1;
+			level = magnify( { x: 0, y: 0 }, 1 );
 		},
 
 		// Alias
 		magnify: function( options ) {
 			this.to( options );
 		},
-		reset: function() {
+		reset: function( options ) {
+			if ( options ) {
+		    	currentOptions = extend({}, defaultOptions);
+		    	currentOptions = extend(currentOptions, options);
+			}
+
 			this.out();
 		},
 
