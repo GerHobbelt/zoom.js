@@ -38,7 +38,7 @@
   var zoom = function(zoomer) {
 
 	var level;
-    var offsetx, offsety;
+    var offsetX, offsetY;
 	var mouseX, mouseY;
 	var panEngageTimeout, panUpdateInterval;
     var currentOptions;
@@ -61,12 +61,12 @@
 		}
     };
 
-	function init(zoomer) {
+	function init(zoomerElement) {
 		// The current zoom level (scale)
 		level = 1;
 
-    	offsetx = 0;
-		offsety = 0;
+    	offsetX = 0;
+		offsetY = 0;
 
 		// The current mouse position, used for panning
 		mouseX = 0;
@@ -78,7 +78,7 @@
 
     	currentOptions = null;
 
-		zoomer = zoomer || document.body;
+		zoomer = zoomerElement || zoomer || document.body;
 
 		// Check for transform support so that we can fallback otherwise
 		supportsTransforms = 	'WebkitTransform' in zoomer.style ||
@@ -178,8 +178,8 @@
 		}
 
 		level = scale;
-        offsetx = rect.x;
-        offsety = rect.y;
+        offsetX = rect.x;
+        offsetY = rect.y;
 
         if( level !== 1 && document.documentElement.classList ) {
             document.documentElement.classList.add( 'zoomed' );
@@ -324,7 +324,7 @@ TBD: old code had this extra edit after each magnify call
 		},
 
         offset: function() {
-            return [offsetx, offsety];
+            return [offsetX, offsetY];
         },
 
 		// allow re-initialization ZOOM:
@@ -335,5 +335,6 @@ TBD: old code had this extra edit after each magnify call
   zoom = zoom();
 
   return zoom.init();
-};
+
+}));
 
