@@ -389,6 +389,12 @@
             return [offsetX, offsetY];
         },
 
+        // set/get the DOM HTMLElement reference to the node which will receive the zoom transform
+        origin: function (el) {
+            zoomer = el || zoomer;
+            return zoomer;
+        },
+
 		// allow re-initialization ZOOM:
 		init: init
 	};
@@ -396,7 +402,7 @@
 
   zoom = zoom();
 
-  return zoom.init();
+  return zoom;
 
 }));
 
