@@ -12,17 +12,31 @@ Hacked so that any element can be use as the zoom frame of reference.
 
 #### Zoom in on an element:
 
-```
-  zoomer = zoom(document.body);
+```javascript
+  var zoomer = zoom(document.body);
 
-  zoomer.to({ 
+  zoomer.to({
     element: document.querySelector( 'img' )
+  });
+```
+
+Additional options:
+
+```
+  zoomer.to({
+    element: document.querySelector( 'img' ),
+
+    // Amount of empty space around zoomed element
+    padding: 20,
+
+    // Function to call once zooming completes
+    callback: function() { /* ... */ }
   });
 ```
 
 #### Zoom in on a point:
 
-```
+```javascript
   zoomer.to({
     x: 100,
     y: 200,
@@ -31,7 +45,7 @@ Hacked so that any element can be use as the zoom frame of reference.
   });
 ```
 
-```
+```javascript
   zoomer.to({
     x: 100,
     y: 200,
@@ -40,7 +54,7 @@ Hacked so that any element can be use as the zoom frame of reference.
 ```
 
 #### Reset
-```
+```javascript
   zoomer.out();
 ```
 

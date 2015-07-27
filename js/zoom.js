@@ -37,19 +37,24 @@
 
   var zoom = function(zoomer) {
 
+	var TRANSITION_DURATION = 800;
 	var level;
     var offsetX, offsetY;
 	var mouseX, mouseY;
-	var panEngageTimeout, panUpdateInterval;
+	var panEngageTimeout = -1;
+    var panUpdateInterval = -1;
     var currentOptions;
 	var supportsTransforms;
-    var timing = "0.8s"
+    var timing = TRANSITION_DURATION + "ms";
     var easing = "ease-in-out";
     var	defaultOptions = {
 		zoneX: 0.12,			// ratio: the sensitive area near the viewport edge where mouse movement will result in a page pan in zoomed state
 		zoneY: 0.12 * 16/9,		// ratio: as above but for vertical panning; by default we use an 'approximately same size' zone as for the width/X
 		accelerationFactor: 14 
 	}; 			
+
+	// Timeout for callback function
+	var callbackTimeout = -1;
 
 
 	// Zoom out if the user hits escape
@@ -79,8 +84,14 @@
 		mouseY = 0;
 
 		// Timeout before pan is activated
+		clearTimeout( panEngageTimeout );
+		clearInterval( panUpdateInterval );
 		panEngageTimeout = -1;
 		panUpdateInterval = -1;
+
+    	// Timeout for callback function
+		clearTimeout( callbackTimeout );
+	    callbackTimeout = -1;
 
     	currentOptions = extend({}, defaultOptions);
 
@@ -297,11 +308,17 @@
 		 * Zooms in on either a rectangle or HTML element.
 		 *
 		 * @param {Object} options
+		 *
+		 *   (required)
 		 *   - element: HTML element to zoom in on
 		 *   OR
 		 *   - x/y: coordinates in non-transformed space to zoom in on
 		 *   - width/height: the portion of the screen to zoom in on
 		 *   - scale: can be used instead of width/height to explicitly set scale
+		 *
+		 *   (optional)
+		 *   - callback: call back when zooming in ends
+		 *   - padding: spacing around the zoomed in element
 		 */
 		to: function( options ) {
 
@@ -318,7 +335,7 @@
 				// If an element is set, that takes precedence
 				if( !!options.element ) {
 					// Space around the zoomed in element to leave on screen
-					var padding = 20;
+					var padding = typeof options.padding === 'number' ? options.padding : 20;
 					var bounds = options.element.getBoundingClientRect();
 
 					options.x = bounds.left - padding;
@@ -340,17 +357,27 @@
 					//options.x -= Math.max(0, (viewport.width - options.width * options.scale) / 2);
 					//options.y -= Math.max(0, (viewport.height - options.height * options.scale) / 2);
 
+					options.x = Math.max( options.x, 0 );
+					options.y = Math.max( options.y, 0 );
+
 					options.scale = magnify( options, options.scale );
 
 					if( options.pan !== false ) {
 						clearTimeout( panEngageTimeout );
 						clearInterval( panUpdateInterval );
+                		panEngageTimeout = -1;
+                		panUpdateInterval = -1;
 
 						// Wait with engaging panning as it may conflict with the
 						// zoom transition
 						panEngageTimeout = setTimeout( function() {
 							panUpdateInterval = setInterval( pan, 1000 / 60 );
-						}, 800 );
+						}, TRANSITION_DURATION );
+
+					}
+
+					if( typeof options.callback === 'function' ) {
+						callbackTimeout = setTimeout( options.callback, TRANSITION_DURATION );
 					}
 				}
 
@@ -360,12 +387,23 @@
 
 		/**
 		 * Resets the document zoom state to its default.
+		 *
+		 * @param {Object} options
+		 *   - callback: call back when zooming out ends
 		 */
-		out: function() {
+		out: function( options ) {
 			clearTimeout( panEngageTimeout );
 			clearInterval( panUpdateInterval );
+			clearTimeout( callbackTimeout );
+    		panEngageTimeout = -1;
+    		panUpdateInterval = -1;
+    	    callbackTimeout = -1;
 
 			level = magnify( { x: 0, y: 0 }, 1 );
+
+			if( options && typeof options.callback === 'function' ) {
+				setTimeout( options.callback, TRANSITION_DURATION );
+			}
 		},
 
 		// Alias
