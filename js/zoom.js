@@ -50,7 +50,18 @@
     var defaultOptions = {
       zoneX: 0.12,      // ratio: the sensitive area near the viewport edge where mouse movement will result in a page pan in zoomed state
       zoneY: 0.12 * 16/9,   // ratio: as above but for vertical panning; by default we use an 'approximately same size' zone as for the width/X
-      accelerationFactor: 14
+      accelerationFactor: 14,
+
+      pan: true,
+      scale: 1,
+
+      x: undefined,
+      y: undefined,
+      width: undefined,
+      height: undefined,
+      padding: undefined,
+      element: null,
+
     };
 
     // Timeout for callback function
@@ -239,8 +250,8 @@
 
     function getScrollOffset() {
       return {
-        x: window.scrollX !== undefined ? window.scrollX : window.pageXOffset,
-        y: window.scrollY !== undefined ? window.scrollY : window.pageYOffset
+        x: window.scrollX != null ? window.scrollX : window.pageXOffset,
+        y: window.scrollY != null ? window.scrollY : window.pageYOffset
       };
     }
 
@@ -348,7 +359,7 @@
           var viewport = getViewportSize();
 
           // If width/height values are set, calculate scale from those values
-          if( options.width !== undefined && options.height !== undefined ) {
+          if( options.width != null && options.height != null ) {
             options.scale = Math.max( Math.min( viewport.width / options.width, viewport.height / options.height ), 1 );
           }
 
@@ -374,7 +385,6 @@
               panEngageTimeout = setTimeout( function() {
                 panUpdateInterval = setInterval( pan, 1000 / 60 );
               }, TRANSITION_DURATION );
-
             }
 
             if( typeof options.callback === 'function' ) {
@@ -402,7 +412,9 @@
 
         level = magnify( { x: 0, y: 0 }, 1 );
 
-        if( options && typeof options.callback === 'function' ) {
+        options = extend(currentOptions, options);
+
+        if( typeof options.callback === 'function' ) {
           setTimeout( options.callback, TRANSITION_DURATION );
         }
       },
